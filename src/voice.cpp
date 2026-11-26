@@ -1,9 +1,41 @@
 #include "rybinsk/voice.hpp"
 
-namespace rybinsk {
+#include <vector>
 
-Voice voiceOf(const Peal&) {
-    throw std::logic_error("ещё не написано");
+namespace rybinsk {
+namespace {
+
+bool strokeFits(const Stroke& stroke) {
+    if (stroke.bell == 0) return stroke.beats == 1;
+    return stroke.bell >= 1 && stroke.bell <= 8 && stroke.beats >= 1;
 }
 
-}  // namespace rybinsk
+} // namespace
+
+Voice voiceOf(const Peal& sheet) {
+    const int count = sheet.size();
+
+    for (int i = 0; i < count; i++) {
+        if (!strokeFits(sheet[i])) return Voice{false, Peal()};
+    }
+
+    std::vector<Stroke> cleaned;
+    cleaned.reserve(count);
+    bool heard[9] = {};
+
+    for (int i = 0; i < count; i++) {
+        const Stroke& stroke = sheet[i];
+
+        if (stroke.bell == 0) {
+            cleaned.push_back(stroke);
+            for (bool& flag : heard) flag = false;
+        } else if (!heard[stroke.bell]) {
+            cleaned.push_back(stroke);
+            heard[stroke.bell] = true;
+        }
+    }
+
+    return Voice{true, Peal(cleaned.data(), static_cast<int>(cleaned.size()))};
+}
+
+} // namespace rybinsk
